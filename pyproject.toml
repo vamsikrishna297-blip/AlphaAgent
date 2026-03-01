@@ -29,7 +29,7 @@ keywords = [
 ]
 name = "alphaagent"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.12"
 
 [project.scripts]
 alphaagent = "alphaagent.app.cli:app"

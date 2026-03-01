@@ -29,6 +29,7 @@ This repository follows the implementation of [RD-Agent](https://github.com/micr
 
 ### 🐍 Create a Conda Environment
 - Create a new conda environment with Python (3.10 and 3.11 are well-tested in our CI):
+- Python 3.12 is not supported for this repo because pinned `numpy==1.23.5` / `pandas==1.5.3` do not provide compatible wheels there.
   ```sh
   conda create -n alphaagent python=3.10
   ```
@@ -126,11 +127,12 @@ This repository follows the implementation of [RD-Agent](https://github.com/micr
   cd qlib && pip install . && cd ..
   ```
 - If you see `daily_pv_all.h5 is not generated`, your Qlib provider data is missing/invalid. Verify `QLIB_PROVIDER_URI` points to existing qlib-formatted data (for India usually `~/.qlib/qlib_data/in_data`).
-- If you see `ValueError: numpy.dtype size changed, may indicate binary incompatibility`, your `numpy`/`pandas` wheels are ABI-mismatched in the current venv. Recreate/reinstall with pinned versions:
+- If you see `ValueError: numpy.dtype size changed` or `pkgutil.ImpImporter` errors while installing `numpy==1.23.5`, you are likely on Python 3.12. Recreate the environment with Python 3.10/3.11 and reinstall:
   ```sh
   deactivate 2>/dev/null || true
   rm -rf venv
-  python3 -m venv venv
+  # choose one supported interpreter
+  python3.11 -m venv venv   # or: python3.10 -m venv venv
   source venv/bin/activate
   pip install -U pip setuptools wheel
   pip install "numpy==1.23.5" "pandas==1.5.3"
