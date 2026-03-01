@@ -42,12 +42,19 @@ class QlibFBWorkspace(FBWorkspace):
         )
 
         # 加载结果
-        ret_df = pd.read_pickle(self.workspace_path / "ret.pkl")
-        logger.log_object(ret_df, tag="Quantitative Backtesting Chart")
-
+        ret_path = self.workspace_path / "ret.pkl"
         csv_path = self.workspace_path / "qlib_res.csv"
-        if not csv_path.exists():
-            logger.error(f"File {csv_path} does not exist.")
-            return None
+
+        if not ret_path.exists() or not csv_path.exists():
+            raise RuntimeError(
+                "Qlib backtest did not produce expected output artifacts (ret.pkl / qlib_res.csv). "
+                f"Config={qlib_config_name}, workspace={self.workspace_path}. "
+                "A common reason is market-config mismatch (e.g., India provider with CN config), "
+                "which can lead to `Empty data from dataset` and missing portfolio artifacts. "
+                "Set QLIB_FACTOR_BASE_CONFIG/QLIB_FACTOR_COMBINED_CONFIG to India templates when using in_data."
+            )
+
+        ret_df = pd.read_pickle(ret_path)
+        logger.log_object(ret_df, tag="Quantitative Backtesting Chart")
 
         return pd.read_csv(csv_path, index_col=0).iloc[:, 0]
