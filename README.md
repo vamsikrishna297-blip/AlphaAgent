@@ -126,6 +126,16 @@ This repository follows the implementation of [RD-Agent](https://github.com/micr
   cd qlib && pip install . && cd ..
   ```
 - If you see `daily_pv_all.h5 is not generated`, your Qlib provider data is missing/invalid. Verify `QLIB_PROVIDER_URI` points to existing qlib-formatted data (for India usually `~/.qlib/qlib_data/in_data`).
+- If you see `ValueError: numpy.dtype size changed, may indicate binary incompatibility`, your `numpy`/`pandas` wheels are ABI-mismatched in the current venv. Recreate/reinstall with pinned versions:
+  ```sh
+  deactivate 2>/dev/null || true
+  rm -rf venv
+  python3 -m venv venv
+  source venv/bin/activate
+  pip install -U pip setuptools wheel
+  pip install "numpy==1.23.5" "pandas==1.5.3"
+  pip install -e .
+  ```
 
 
 ### 🚀 Run AlphaAgent
