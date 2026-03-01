@@ -106,6 +106,8 @@ This repository follows the implementation of [RD-Agent](https://github.com/micr
 - `REASONING_MODEL` is used in the idea agent and factor agent, while `CHAT_MODEL` is for debugging factors and generating feedbacks.
 - Slow-thinking models, such as o3-mini are preferred for the `REASONING_MODEL`.
 - To run the project in a local environment (instead of Docker), add `USE_LOCAL=True` to the `.env` file.
+- If you see `python-dotenv could not parse statement` errors, ensure your `.env` is plain `KEY=VALUE` lines only (no triple-quoted text blocks).
+- If you see `ImportError: cannot import name 'ConfigDict' from 'pydantic'`, reinstall with pydantic v2 (`pip install -U "pydantic>=2.7,<3" "pydantic-settings>=2.0,<3"`).
 
 
 ### 🚀 Run AlphaAgent
