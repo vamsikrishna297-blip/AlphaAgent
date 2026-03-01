@@ -4,10 +4,24 @@ from pathlib import Path
 import qlib
 from dotenv import load_dotenv
 
-# When running this script directly, load project .env so QLIB_PROVIDER_URI is picked up.
+# When running this script directly, load .env from both CWD and project root.
+load_dotenv()  # CWD/.env
 load_dotenv(Path(__file__).resolve().parents[4] / ".env")
 
-provider_uri = Path(os.getenv("QLIB_PROVIDER_URI", "~/.qlib/qlib_data/cn_data")).expanduser()
+provider_uri_raw = os.getenv("QLIB_PROVIDER_URI") or os.getenv("QLIB_DEFAULT_DATA_DIR")
+if not provider_uri_raw:
+    raise RuntimeError(
+        "QLIB_PROVIDER_URI is not set. Please set it in .env or shell, e.g. "
+        "QLIB_PROVIDER_URI=~/.qlib/qlib_data/in_data",
+    )
+
+provider_uri = Path(provider_uri_raw).expanduser().resolve()
+if not provider_uri.exists():
+    raise RuntimeError(
+        f"QLIB_PROVIDER_URI path does not exist: {provider_uri}. "
+        "Please point it to your qlib-formatted data directory (contains calendars/features/instruments).",
+    )
+
 print(f"[generate.py] Using QLIB_PROVIDER_URI={provider_uri}")
 qlib.init(provider_uri=str(provider_uri))
 from qlib.data import D
