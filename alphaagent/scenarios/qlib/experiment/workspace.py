@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 from typing import Any
 
 import pandas as pd
@@ -25,6 +26,18 @@ class QlibFBWorkspace(FBWorkspace):
         qtde = QTDockerEnv(is_local=use_local)
         qtde.prepare()
         
+        config_path = self.workspace_path / qlib_config_name
+        if config_path.exists():
+            config_text = config_path.read_text()
+            # qlib only supports built-in regions (cn/us/tw); guard stale templates still using region: in
+            if re.search(r"(^|\n)\s*region:\s*in\s*(\n|$)", config_text):
+                fixed_text = re.sub(r"(^|\n)(\s*region:\s*)in(\s*(?:\n|$))", r"\1\2cn\3", config_text, count=1)
+                config_path.write_text(fixed_text)
+                logger.warning(
+                    f"Detected unsupported qlib region='in' in {config_path.name}; auto-corrected to region='cn'. "
+                    "Keep provider_uri/instruments pointing to India data."
+                )
+
         # 运行Qlib回测
         logger.info(f"Execute {'Local' if use_local else 'Docker container'} Backtest: qrun {qlib_config_name}")
         execute_log = qtde.run(
