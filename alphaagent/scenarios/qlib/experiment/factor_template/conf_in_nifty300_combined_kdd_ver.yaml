@@ -1,6 +1,8 @@
 qlib_init:
+    # NOTE: qlib core only supports built-in regions (cn/us/tw).
+    # For India custom data, keep region=cn and use provider_uri/instruments from in_data.
     provider_uri: "~/.qlib/qlib_data/in_data"
-    region: in
+    region: cn
 
 market: &market NIFTY300
 benchmark: &benchmark NIFTY300

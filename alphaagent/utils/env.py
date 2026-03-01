@@ -188,7 +188,8 @@ class QlibLocalEnv(LocalEnv):
         
         if result.returncode != 0:
             logger.error(f"命令执行失败: {result.stderr}")
-            
+            raise RuntimeError(result.stderr or "Local command failed")
+
         return output
 
 

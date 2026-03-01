@@ -129,6 +129,7 @@ This repository follows the implementation of [RD-Agent](https://github.com/micr
 - If you see `daily_pv_all.h5 is not generated`, your Qlib provider data is missing/invalid. Verify `QLIB_PROVIDER_URI` points to existing qlib-formatted data (for India usually `~/.qlib/qlib_data/in_data`).
 - If you run `generate.py` directly, it loads `.env` and now **requires** `QLIB_PROVIDER_URI` (or `QLIB_DEFAULT_DATA_DIR`). It will fail fast if the path is missing, so you do not silently fall back to CN data.
 - If qlib logs still show `cn_data`, check for the new debug lines from `generate.py` (`[generate.py] Script path=...` and `[generate.py] qlib active provider_uri=...`). If you do not see them, your local checkout is not on the latest commit.
+- Qlib does not recognize `region: in` by default (`KeyError: 'in'`). For India custom datasets, use India `provider_uri`/instruments but keep `region: cn` in qrun configs.
 - If you see `Empty data from dataset` and qrun logs show `cn_data` while your `.env` points to `in_data`, your backtest template is still CN. Set:
   ```sh
   QLIB_FACTOR_BASE_CONFIG=conf_in_nifty500.yaml

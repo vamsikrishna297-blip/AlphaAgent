@@ -50,6 +50,7 @@ class QlibFBWorkspace(FBWorkspace):
                 "Qlib backtest did not produce expected output artifacts (ret.pkl / qlib_res.csv). "
                 f"Config={qlib_config_name}, workspace={self.workspace_path}. "
                 "A common reason is market-config mismatch (e.g., India provider with CN config), "
+                "or setting unsupported qlib region='in' (qlib expects cn/us/tw). "
                 "which can lead to `Empty data from dataset` and missing portfolio artifacts. "
                 "Set QLIB_FACTOR_BASE_CONFIG/QLIB_FACTOR_COMBINED_CONFIG to India templates when using in_data."
             )
