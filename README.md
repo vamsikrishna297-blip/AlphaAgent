@@ -128,6 +128,7 @@ This repository follows the implementation of [RD-Agent](https://github.com/micr
   ```
 - If you see `daily_pv_all.h5 is not generated`, your Qlib provider data is missing/invalid. Verify `QLIB_PROVIDER_URI` points to existing qlib-formatted data (for India usually `~/.qlib/qlib_data/in_data`).
 - If you run `generate.py` directly, it loads `.env` and now **requires** `QLIB_PROVIDER_URI` (or `QLIB_DEFAULT_DATA_DIR`). It will fail fast if the path is missing, so you do not silently fall back to CN data.
+- If qlib logs still show `cn_data`, check for the new debug lines from `generate.py` (`[generate.py] Script path=...` and `[generate.py] qlib active provider_uri=...`). If you do not see them, your local checkout is not on the latest commit.
 - If you see `ValueError: numpy.dtype size changed` or `pkgutil.ImpImporter` errors while installing `numpy==1.23.5`, you are likely on Python 3.12. Recreate the environment with Python 3.10/3.11 and reinstall:
   ```sh
   deactivate 2>/dev/null || true

@@ -16,6 +16,7 @@ if not provider_uri_raw:
     )
 
 provider_uri = Path(provider_uri_raw).expanduser().resolve()
+print(f"[generate.py] Script path={Path(__file__).resolve()}")
 if not provider_uri.exists():
     raise RuntimeError(
         f"QLIB_PROVIDER_URI path does not exist: {provider_uri}. "
@@ -25,6 +26,15 @@ if not provider_uri.exists():
 print(f"[generate.py] Using QLIB_PROVIDER_URI={provider_uri}")
 qlib.init(provider_uri=str(provider_uri))
 from qlib.data import D
+from qlib.config import C
+
+actual_provider_uri = Path(C["provider_uri"]["__DEFAULT_FREQ"]).expanduser().resolve()
+print(f"[generate.py] qlib active provider_uri={actual_provider_uri}")
+if actual_provider_uri != provider_uri:
+    raise RuntimeError(
+        f"QLIB provider mismatch: expected {provider_uri}, but qlib is using {actual_provider_uri}. "
+        "Please ensure you are on the latest branch/commit and that no wrapper overrides qlib.init settings.",
+    )
 
 instruments = D.instruments()
 fields = ["$open", "$close", "$high", "$low", "$volume"]  # , "$amount", "$turn", "$pettm", "$pbmrq"
