@@ -1,4 +1,5 @@
 import io
+import os
 import re
 import shutil
 from pathlib import Path
@@ -17,20 +18,38 @@ def generate_data_folder_from_qlib(use_local: bool = True):
     template_path = Path(__file__).parent / "factor_data_template"
     qtde = QTDockerEnv(is_local=use_local)
     qtde.prepare()
-    
+
+    provider_uri = os.getenv("QLIB_PROVIDER_URI", "~/.qlib/qlib_data/cn_data")
+
     # 运行数据生成脚本
     logger.info(f"在{'本地' if use_local else 'Docker容器'}中生成因子数据")
-    execute_log = qtde.run(
-        local_path=str(template_path),
-        entry=f"python generate.py",
-    )
+    try:
+        execute_log = qtde.run(
+            local_path=str(template_path),
+            entry=f"python generate.py",
+        )
+    except RuntimeError as e:
+        error_message = str(e)
+        if "No module named 'qlib'" in error_message or 'No module named "qlib"' in error_message:
+            raise RuntimeError(
+                "Qlib is not installed in the current environment. "
+                "Install it first, e.g. `pip install pyqlib` or install from source via "
+                "`git clone https://github.com/microsoft/qlib.git && cd qlib && pip install .`, "
+                "then re-run alphaagent.",
+            ) from e
+        raise
 
     # 检查文件是否生成
     daily_pv_all = Path(__file__).parent / "factor_data_template" / "daily_pv_all.h5"
     daily_pv_debug = Path(__file__).parent / "factor_data_template" / "daily_pv_debug.h5"
-    
-    assert daily_pv_all.exists(), "daily_pv_all.h5 is not generated."
-    assert daily_pv_debug.exists(), "daily_pv_debug.h5 is not generated."
+
+    if not daily_pv_all.exists() or not daily_pv_debug.exists():
+        raise RuntimeError(
+            "Qlib data extraction failed: expected daily_pv_all.h5 and daily_pv_debug.h5 were not generated. "
+            f"Check QLIB_PROVIDER_URI={provider_uri} and ensure your qlib dataset exists and is readable. "
+            "If using India configs, set QLIB_PROVIDER_URI=~/.qlib/qlib_data/in_data and prepare qlib-formatted India data. "
+            f"Template path: {template_path}. Last execution output: {execute_log}",
+        )
 
     # 创建数据目录并复制文件
     logger.info(f"复制生成的数据文件到工作目录")

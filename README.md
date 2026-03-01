@@ -118,6 +118,14 @@ This repository follows the implementation of [RD-Agent](https://github.com/micr
   pip install -U "pydantic>=2.7,<3" "pydantic-settings>=2.0,<3"
   pip install -e .
   ```
+- If you see `No module named 'qlib'`, install Qlib in the same virtualenv before running:
+  ```sh
+  pip install pyqlib
+  # or
+  git clone https://github.com/microsoft/qlib.git
+  cd qlib && pip install . && cd ..
+  ```
+- If you see `daily_pv_all.h5 is not generated`, your Qlib provider data is missing/invalid. Verify `QLIB_PROVIDER_URI` points to existing qlib-formatted data (for India usually `~/.qlib/qlib_data/in_data`).
 
 
 ### 🚀 Run AlphaAgent
