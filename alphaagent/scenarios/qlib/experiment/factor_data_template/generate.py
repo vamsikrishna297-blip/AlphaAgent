@@ -1,7 +1,8 @@
+import os
 import qlib
 
-qlib.init(provider_uri="~/.qlib/qlib_data/cn_data")
-# qlib.init(provider_uri="~/.qlib/qlib_data/us_data")
+provider_uri = os.getenv("QLIB_PROVIDER_URI", "~/.qlib/qlib_data/cn_data")
+qlib.init(provider_uri=provider_uri)
 from qlib.data import D
 
 instruments = D.instruments()

@@ -80,6 +80,19 @@ This repository follows the implementation of [RD-Agent](https://github.com/micr
 
 - Alternatively, stock data (out-dated) will be automatically downloaded to `~/.qlib/qlib_data/cn_data`.
 
+- For a market-porting assessment focused on India, see `docs/india_market_feasibility.md`.
+
+
+- To run on India universes such as NIFTY500/NIFTY300, set in `.env`:
+  ```sh
+  QLIB_DEFAULT_DATA_DIR=~/.qlib/qlib_data/in_data
+  QLIB_DEFAULT_REGION=in
+  QLIB_FACTOR_BASE_CONFIG=conf_in_nifty500.yaml          # or conf_in_nifty300.yaml
+  QLIB_FACTOR_COMBINED_CONFIG=conf_in_nifty500_combined_kdd_ver.yaml   # or nifty300 variant
+  QLIB_PROVIDER_URI=~/.qlib/qlib_data/in_data
+  ```
+  India config templates are provided under `alphaagent/scenarios/qlib/experiment/factor_template/`.
+
 
 - You can modify backtest configuration files which are located at:
   - Baseline: `alphaagent/scenarios/qlib/experiment/factor_template/conf.yaml`

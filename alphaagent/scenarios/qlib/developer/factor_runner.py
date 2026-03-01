@@ -118,7 +118,9 @@ class QlibFactorRunner(CachedRunner[QlibFactorExperiment]):
 
 
         # 执行回测，支持本地或Docker环境
-        config_name = f"conf.yaml" if len(exp.based_experiments) == 0 else "conf_cn_combined_kdd_ver.yaml"
+        default_base_config = os.getenv("QLIB_FACTOR_BASE_CONFIG", "conf.yaml")
+        default_combined_config = os.getenv("QLIB_FACTOR_COMBINED_CONFIG", "conf_cn_combined_kdd_ver.yaml")
+        config_name = default_base_config if len(exp.based_experiments) == 0 else default_combined_config
         logger.info(f"Execute factor backtest (Use {'Local' if use_local else 'Docker container'}): {config_name}")
         
         result = exp.experiment_workspace.execute(
