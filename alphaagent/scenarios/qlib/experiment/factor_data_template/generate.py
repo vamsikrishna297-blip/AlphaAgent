@@ -1,8 +1,15 @@
 import os
-import qlib
+from pathlib import Path
 
-provider_uri = os.getenv("QLIB_PROVIDER_URI", "~/.qlib/qlib_data/cn_data")
-qlib.init(provider_uri=provider_uri)
+import qlib
+from dotenv import load_dotenv
+
+# When running this script directly, load project .env so QLIB_PROVIDER_URI is picked up.
+load_dotenv(Path(__file__).resolve().parents[4] / ".env")
+
+provider_uri = Path(os.getenv("QLIB_PROVIDER_URI", "~/.qlib/qlib_data/cn_data")).expanduser()
+print(f"[generate.py] Using QLIB_PROVIDER_URI={provider_uri}")
+qlib.init(provider_uri=str(provider_uri))
 from qlib.data import D
 
 instruments = D.instruments()
