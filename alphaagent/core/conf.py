@@ -7,6 +7,16 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from pydantic.fields import FieldInfo
 
+from pydantic import __version__ as PYDANTIC_VERSION
+
+
+_pydantic_major_version = int(PYDANTIC_VERSION.split(".")[0])
+if _pydantic_major_version < 2:
+    raise ImportError(
+        "AlphaAgent requires pydantic>=2.7,<3. "
+        "Please run: pip install -U \"pydantic>=2.7,<3\" \"pydantic-settings>=2.0,<3\"",
+    )
+
 from pydantic_settings import (
     BaseSettings,
     EnvSettingsSource,

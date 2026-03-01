@@ -108,6 +108,16 @@ This repository follows the implementation of [RD-Agent](https://github.com/micr
 - To run the project in a local environment (instead of Docker), add `USE_LOCAL=True` to the `.env` file.
 - If you see `python-dotenv could not parse statement` errors, ensure your `.env` is plain `KEY=VALUE` lines only (no triple-quoted text blocks).
 - If you see `ImportError: cannot import name 'ConfigDict' from 'pydantic'`, reinstall with pydantic v2 (`pip install -U "pydantic>=2.7,<3" "pydantic-settings>=2.0,<3"`).
+- If the `ConfigDict` error persists in an old virtualenv, recreate and reinstall dependencies:
+  ```sh
+  deactivate 2>/dev/null || true
+  rm -rf venv
+  python3 -m venv venv
+  source venv/bin/activate
+  pip install -U pip setuptools wheel
+  pip install -U "pydantic>=2.7,<3" "pydantic-settings>=2.0,<3"
+  pip install -e .
+  ```
 
 
 ### 🚀 Run AlphaAgent
