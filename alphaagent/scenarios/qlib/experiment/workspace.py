@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 import re
 from typing import Any
 
@@ -29,14 +30,48 @@ class QlibFBWorkspace(FBWorkspace):
         config_path = self.workspace_path / qlib_config_name
         if config_path.exists():
             config_text = config_path.read_text()
+
             # qlib only supports built-in regions (cn/us/tw); guard stale templates still using region: in
             if re.search(r"(^|\n)\s*region:\s*in\s*(\n|$)", config_text):
-                fixed_text = re.sub(r"(^|\n)(\s*region:\s*)in(\s*(?:\n|$))", r"\1\2cn\3", config_text, count=1)
-                config_path.write_text(fixed_text)
+                config_text = re.sub(r"(^|\n)(\s*region:\s*)in(\s*(?:\n|$))", r"\1\2cn\3", config_text, count=1)
                 logger.warning(
                     f"Detected unsupported qlib region='in' in {config_path.name}; auto-corrected to region='cn'. "
                     "Keep provider_uri/instruments pointing to India data."
                 )
+
+            # Optional market override from env to match available instrument files
+            qlib_market = os.getenv("QLIB_MARKET", "").strip()
+            qlib_benchmark = os.getenv("QLIB_BENCHMARK", "").strip()
+            if qlib_market:
+                config_text = re.sub(
+                    r"(^|\n)(\s*market:\s*&market\s*)[^\n]+",
+                    rf"\1\2{qlib_market}",
+                    config_text,
+                    count=1,
+                )
+            if qlib_benchmark:
+                config_text = re.sub(
+                    r"(^|\n)(\s*benchmark:\s*&benchmark\s*)[^\n]+",
+                    rf"\1\2{qlib_benchmark}",
+                    config_text,
+                    count=1,
+                )
+
+            # Validate instrument file exists for selected market in provider_uri
+            provider_match = re.search(r'(^|\n)\s*provider_uri:\s*"?([^\n"]+)"?', config_text)
+            market_match = re.search(r"(^|\n)\s*market:\s*&market\s*([^\n#]+)", config_text)
+            if provider_match and market_match:
+                provider_uri = Path(os.path.expanduser(provider_match.group(2).strip())).resolve()
+                market_name = market_match.group(2).strip()
+                instrument_path = provider_uri / "instruments" / f"{market_name.lower()}.txt"
+                if not instrument_path.exists():
+                    available = sorted([x.name for x in (provider_uri / "instruments").glob("*.txt")]) if (provider_uri / "instruments").exists() else []
+                    raise RuntimeError(
+                        f"Instrument file not found for market '{market_name}': {instrument_path}. "
+                        f"Set QLIB_MARKET to one of available instrument files (without .txt), e.g. {available[:10]}"
+                    )
+
+            config_path.write_text(config_text)
 
         # 运行Qlib回测
         logger.info(f"Execute {'Local' if use_local else 'Docker container'} Backtest: qrun {qlib_config_name}")

@@ -134,6 +134,13 @@ This repository follows the implementation of [RD-Agent](https://github.com/micr
   ```sh
   rm -rf pickle_cache/* git_ignore_folder/RD-Agent_workspace/*
   ```
+- If you see `instrument not exists: .../instruments/<name>.txt`, your selected market name does not match instrument files in your qlib dataset.
+  - List available files: `ls ~/.qlib/qlib_data/in_data/instruments/*.txt`
+  - Set `.env` overrides (without `.txt`):
+    ```sh
+    QLIB_MARKET=<instrument_file_stem>
+    QLIB_BENCHMARK=<optional_benchmark_symbol>
+    ```
 - If you see `Empty data from dataset` and qrun logs show `cn_data` while your `.env` points to `in_data`, your backtest template is still CN. Set:
   ```sh
   QLIB_FACTOR_BASE_CONFIG=conf_in_nifty500.yaml
