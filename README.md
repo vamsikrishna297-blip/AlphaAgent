@@ -87,7 +87,7 @@ This repository follows the implementation of [RD-Agent](https://github.com/micr
 - To run on India universes such as NIFTY500/NIFTY300, set in `.env`:
   ```sh
   QLIB_DEFAULT_DATA_DIR=~/.qlib/qlib_data/in_data
-  QLIB_DEFAULT_REGION=in
+  QLIB_DEFAULT_REGION=cn
   QLIB_FACTOR_BASE_CONFIG=conf_in_nifty500.yaml          # or conf_in_nifty300.yaml
   QLIB_FACTOR_COMBINED_CONFIG=conf_in_nifty500_combined_kdd_ver.yaml   # or nifty300 variant
   QLIB_PROVIDER_URI=~/.qlib/qlib_data/in_data
