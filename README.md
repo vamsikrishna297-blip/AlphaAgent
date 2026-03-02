@@ -135,6 +135,12 @@ This repository follows the implementation of [RD-Agent](https://github.com/micr
   rm -rf pickle_cache/* git_ignore_folder/RD-Agent_workspace/*
   ```
 - If you see `instrument not exists: .../instruments/<name>.txt`, your selected market name does not match instrument files in your qlib dataset.
+- If you see `The benchmark ['NIFTY300'] does not exist`, your benchmark must be an actual instrument code from the selected market file, not the market alias.
+  - Example fix in `.env`:
+    ```sh
+    QLIB_MARKET=nifty300
+    QLIB_BENCHMARK=<one_code_from_~/.qlib/qlib_data/in_data/instruments/nifty300.txt>
+    ```
   - List available files: `ls ~/.qlib/qlib_data/in_data/instruments/*.txt`
   - Set `.env` overrides (without `.txt`):
     ```sh

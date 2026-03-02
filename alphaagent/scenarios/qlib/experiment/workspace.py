@@ -60,16 +60,41 @@ class QlibFBWorkspace(FBWorkspace):
             # Validate instrument file exists for selected market in provider_uri
             provider_match = re.search(r'(^|\n)\s*provider_uri:\s*"?([^\n"]+)"?', config_text)
             market_match = re.search(r"(^|\n)\s*market:\s*&market\s*([^\n#]+)", config_text)
+            benchmark_match = re.search(r"(^|\n)\s*benchmark:\s*&benchmark\s*([^\n#]+)", config_text)
             if provider_match and market_match:
                 provider_uri = Path(os.path.expanduser(provider_match.group(2).strip())).resolve()
                 market_name = market_match.group(2).strip()
                 instrument_path = provider_uri / "instruments" / f"{market_name.lower()}.txt"
+                instruments_dir = provider_uri / "instruments"
                 if not instrument_path.exists():
-                    available = sorted([x.name for x in (provider_uri / "instruments").glob("*.txt")]) if (provider_uri / "instruments").exists() else []
+                    available = sorted([x.name for x in instruments_dir.glob("*.txt")]) if instruments_dir.exists() else []
                     raise RuntimeError(
                         f"Instrument file not found for market '{market_name}': {instrument_path}. "
                         f"Set QLIB_MARKET to one of available instrument files (without .txt), e.g. {available[:10]}"
                     )
+
+                # Benchmark in qlib backtest must be an existing instrument/code, not the market alias itself.
+                if benchmark_match:
+                    benchmark_name = benchmark_match.group(2).strip()
+                    sample_codes = []
+                    try:
+                        with open(instrument_path) as f:
+                            for i, line in enumerate(f):
+                                parts = line.strip().split("	")
+                                if parts and parts[0]:
+                                    sample_codes.append(parts[0])
+                                if i >= 2000:
+                                    break
+                    except Exception:
+                        sample_codes = []
+
+                    if sample_codes and benchmark_name not in set(sample_codes):
+                        env_benchmark = os.getenv("QLIB_BENCHMARK", "").strip()
+                        tip = env_benchmark if env_benchmark else sample_codes[0]
+                        raise RuntimeError(
+                            f"Benchmark '{benchmark_name}' is not present in {instrument_path.name}. "
+                            f"Set QLIB_BENCHMARK to a valid code from that file (e.g. {tip})."
+                        )
 
             config_path.write_text(config_text)
 
