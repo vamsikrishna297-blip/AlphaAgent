@@ -1,4 +1,6 @@
 from pathlib import Path
+import os
+import re
 from typing import Any
 
 import pandas as pd
@@ -25,6 +27,83 @@ class QlibFBWorkspace(FBWorkspace):
         qtde = QTDockerEnv(is_local=use_local)
         qtde.prepare()
         
+        config_path = self.workspace_path / qlib_config_name
+        if config_path.exists():
+            config_text = config_path.read_text()
+
+            # qlib only supports built-in regions (cn/us/tw); guard stale templates still using region: in
+            if re.search(r"(^|\n)\s*region:\s*in\s*(\n|$)", config_text):
+                config_text = re.sub(r"(^|\n)(\s*region:\s*)in(\s*(?:\n|$))", r"\1\2cn\3", config_text, count=1)
+                logger.warning(
+                    f"Detected unsupported qlib region='in' in {config_path.name}; auto-corrected to region='cn'. "
+                    "Keep provider_uri/instruments pointing to India data."
+                )
+
+            # Optional market override from env to match available instrument files
+            qlib_market = os.getenv("QLIB_MARKET", "").strip()
+            qlib_benchmark = os.getenv("QLIB_BENCHMARK", "").strip()
+            if qlib_market:
+                config_text = re.sub(
+                    r"(^|\n)(\s*market:\s*&market\s*)[^\n]+",
+                    rf"\1\2{qlib_market}",
+                    config_text,
+                    count=1,
+                )
+            if qlib_benchmark:
+                config_text = re.sub(
+                    r"(^|\n)(\s*benchmark:\s*&benchmark\s*)[^\n]+",
+                    rf"\1\2{qlib_benchmark}",
+                    config_text,
+                    count=1,
+                )
+
+            # Validate instrument file exists for selected market in provider_uri
+            provider_match = re.search(r'(^|\n)\s*provider_uri:\s*"?([^\n"]+)"?', config_text)
+            market_match = re.search(r"(^|\n)\s*market:\s*&market\s*([^\n#]+)", config_text)
+            benchmark_match = re.search(r"(^|\n)\s*benchmark:\s*&benchmark\s*([^\n#]+)", config_text)
+            if provider_match and market_match:
+                provider_uri = Path(os.path.expanduser(provider_match.group(2).strip())).resolve()
+                market_name = market_match.group(2).strip()
+                instrument_path = provider_uri / "instruments" / f"{market_name.lower()}.txt"
+                instruments_dir = provider_uri / "instruments"
+                if not instrument_path.exists():
+                    available = sorted([x.name for x in instruments_dir.glob("*.txt")]) if instruments_dir.exists() else []
+                    raise RuntimeError(
+                        f"Instrument file not found for market '{market_name}': {instrument_path}. "
+                        f"Set QLIB_MARKET to one of available instrument files (without .txt), e.g. {available[:10]}"
+                    )
+
+                # Benchmark in qlib backtest must be an existing instrument/code, not the market alias itself.
+                if benchmark_match:
+                    benchmark_name = benchmark_match.group(2).strip()
+                    sample_codes = []
+                    try:
+                        with open(instrument_path) as f:
+                            for i, line in enumerate(f):
+                                parts = line.strip().split("	")
+                                if parts and parts[0]:
+                                    sample_codes.append(parts[0])
+                                if i >= 2000:
+                                    break
+                    except Exception:
+                        sample_codes = []
+
+                    if sample_codes and benchmark_name not in set(sample_codes):
+                        fallback_benchmark = sample_codes[0]
+                        config_text = re.sub(
+                            r"(^|\n)(\s*benchmark:\s*&benchmark\s*)[^\n]+",
+                            rf"\1\2{fallback_benchmark}",
+                            config_text,
+                            count=1,
+                        )
+                        logger.warning(
+                            f"Benchmark '{benchmark_name}' is not present in {instrument_path.name}; "
+                            f"auto-corrected benchmark to '{fallback_benchmark}'. "
+                            "Set QLIB_BENCHMARK in .env to a preferred valid code if needed."
+                        )
+
+            config_path.write_text(config_text)
+
         # 运行Qlib回测
         logger.info(f"Execute {'Local' if use_local else 'Docker container'} Backtest: qrun {qlib_config_name}")
         execute_log = qtde.run(
@@ -42,12 +121,20 @@ class QlibFBWorkspace(FBWorkspace):
         )
 
         # 加载结果
-        ret_df = pd.read_pickle(self.workspace_path / "ret.pkl")
-        logger.log_object(ret_df, tag="Quantitative Backtesting Chart")
-
+        ret_path = self.workspace_path / "ret.pkl"
         csv_path = self.workspace_path / "qlib_res.csv"
-        if not csv_path.exists():
-            logger.error(f"File {csv_path} does not exist.")
-            return None
+
+        if not ret_path.exists() or not csv_path.exists():
+            raise RuntimeError(
+                "Qlib backtest did not produce expected output artifacts (ret.pkl / qlib_res.csv). "
+                f"Config={qlib_config_name}, workspace={self.workspace_path}. "
+                "A common reason is market-config mismatch (e.g., India provider with CN config), "
+                "or setting unsupported qlib region='in' (qlib expects cn/us/tw). "
+                "which can lead to `Empty data from dataset` and missing portfolio artifacts. "
+                "Set QLIB_FACTOR_BASE_CONFIG/QLIB_FACTOR_COMBINED_CONFIG to India templates when using in_data."
+            )
+
+        ret_df = pd.read_pickle(ret_path)
+        logger.log_object(ret_df, tag="Quantitative Backtesting Chart")
 
         return pd.read_csv(csv_path, index_col=0).iloc[:, 0]

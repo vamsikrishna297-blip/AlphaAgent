@@ -19,6 +19,15 @@ from alphaagent.scenarios.qlib.regulator.factor_regulator import FactorRegulator
 QlibFactorHypothesis = Hypothesis
 alphaagent_prompt_dict = Prompts(file_path=Path(__file__).parent / "prompts_alphaagent.yaml")
 
+
+def _safe_json_loads(response: str) -> dict:
+    try:
+        return json.loads(response)
+    except json.JSONDecodeError:
+        repaired = APIBackend._repair_common_json_escaping(response)
+        return json.loads(repaired)
+
+
 class AlphaAgentHypothesis(Hypothesis):
     """
     AlphaAgentHypothesis extends the Hypothesis class to include a potential_direction,
@@ -76,7 +85,7 @@ class QlibFactorHypothesisGen(FactorHypothesisGen):
         return context_dict, True
 
     def convert_response(self, response: str) -> Hypothesis:
-        response_dict = json.loads(response)
+        response_dict = _safe_json_loads(response)
         hypothesis = QlibFactorHypothesis(
             hypothesis=response_dict["hypothesis"],
             reason=response_dict["reason"],
@@ -119,7 +128,7 @@ class QlibFactorHypothesis2Experiment(FactorHypothesis2Experiment):
         }, True
 
     def convert_response(self, response: str, trace: Trace) -> FactorExperiment:
-        response_dict = json.loads(response)
+        response_dict = _safe_json_loads(response)
         tasks = []
 
         for factor_name in response_dict:
@@ -194,7 +203,7 @@ class AlphaAgentHypothesisGen(FactorHypothesisGen):
         return context_dict, True
 
     def convert_response(self, response: str) -> AlphaAgentHypothesis:
-        response_dict = json.loads(response)
+        response_dict = _safe_json_loads(response)
         hypothesis = AlphaAgentHypothesis(
             hypothesis=response_dict["hypothesis"],
             concise_observation=response_dict["concise_observation"],
@@ -328,7 +337,7 @@ class AlphaAgentHypothesis2FactorExpression(FactorHypothesis2Experiment):
                 break
                 
             resp = APIBackend().build_messages_and_create_chat_completion(user_prompt, system_prompt, json_mode=json_flag)
-            response_dict = json.loads(resp)
+            response_dict = _safe_json_loads(resp)
             proposed_names = []
             proposed_exprs = []
             
@@ -398,7 +407,7 @@ class AlphaAgentHypothesis2FactorExpression(FactorHypothesis2Experiment):
     
 
     def convert_response(self, response: str, trace: Trace) -> FactorExperiment:
-        response_dict = json.loads(response)
+        response_dict = _safe_json_loads(response)
         tasks = []
 
         for factor_name in response_dict:

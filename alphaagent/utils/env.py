@@ -88,9 +88,11 @@ class LocalEnv(Env[LocalConf]):
     """
 
     def prepare(self):
-        if not (Path("~/.qlib/qlib_data/cn_data").expanduser().resolve().exists()):
+        default_qlib_data_dir = os.getenv("QLIB_DEFAULT_DATA_DIR", "~/.qlib/qlib_data/cn_data")
+        default_qlib_region = os.getenv("QLIB_DEFAULT_REGION", "cn")
+        if not (Path(default_qlib_data_dir).expanduser().resolve().exists()):
             self.run(
-                entry="python -m qlib.run.get_data qlib_data --target_dir ~/.qlib/qlib_data/cn_data --region cn",
+                entry=f"python -m qlib.run.get_data qlib_data --target_dir {default_qlib_data_dir} --region {default_qlib_region}",
             )
         else:
             print("Data already exists. Download skipped.")
@@ -129,7 +131,7 @@ class QlibLocalEnv(LocalEnv):
         """确保本地环境已准备就绪"""
         logger.info("Use local environment to run Qlib backtest")
         # 确保Qlib数据目录存在
-        qlib_data_path = Path("~/.qlib/qlib_data/cn_data").expanduser()
+        qlib_data_path = Path(os.getenv("QLIB_DEFAULT_DATA_DIR", "~/.qlib/qlib_data/cn_data")).expanduser()
         if not qlib_data_path.exists():
             logger.warning(f"Qlib数据目录不存在: {qlib_data_path}，请确保已下载数据")
         
@@ -186,7 +188,8 @@ class QlibLocalEnv(LocalEnv):
         
         if result.returncode != 0:
             logger.error(f"命令执行失败: {result.stderr}")
-            
+            raise RuntimeError(result.stderr or "Local command failed")
+
         return output
 
 

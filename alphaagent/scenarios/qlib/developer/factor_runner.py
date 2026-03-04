@@ -118,7 +118,19 @@ class QlibFactorRunner(CachedRunner[QlibFactorExperiment]):
 
 
         # 执行回测，支持本地或Docker环境
-        config_name = f"conf.yaml" if len(exp.based_experiments) == 0 else "conf_cn_combined_kdd_ver.yaml"
+        default_base_config = os.getenv("QLIB_FACTOR_BASE_CONFIG", "conf.yaml")
+        default_combined_config = os.getenv("QLIB_FACTOR_COMBINED_CONFIG", "conf_cn_combined_kdd_ver.yaml")
+        provider_uri = os.getenv("QLIB_PROVIDER_URI", "")
+        config_name = default_base_config if len(exp.based_experiments) == 0 else default_combined_config
+
+        if provider_uri and "in_data" in provider_uri and config_name in {"conf.yaml", "conf_cn_combined_kdd_ver.yaml"}:
+            raise RuntimeError(
+                "Detected QLIB_PROVIDER_URI pointing to India data but backtest config is still CN default "
+                f"({config_name}). Please set QLIB_FACTOR_BASE_CONFIG/QLIB_FACTOR_COMBINED_CONFIG to "
+                "India templates, e.g. conf_in_nifty500.yaml and conf_in_nifty500_combined_kdd_ver.yaml "
+                "(or NIFTY300 variants)."
+            )
+
         logger.info(f"Execute factor backtest (Use {'Local' if use_local else 'Docker container'}): {config_name}")
         
         result = exp.experiment_workspace.execute(

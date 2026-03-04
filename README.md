@@ -29,6 +29,7 @@ This repository follows the implementation of [RD-Agent](https://github.com/micr
 
 ### 🐍 Create a Conda Environment
 - Create a new conda environment with Python (3.10 and 3.11 are well-tested in our CI):
+- Python 3.12 is not supported for this repo because pinned `numpy==1.23.5` / `pandas==1.5.3` do not provide compatible wheels there.
   ```sh
   conda create -n alphaagent python=3.10
   ```
@@ -80,6 +81,19 @@ This repository follows the implementation of [RD-Agent](https://github.com/micr
 
 - Alternatively, stock data (out-dated) will be automatically downloaded to `~/.qlib/qlib_data/cn_data`.
 
+- For a market-porting assessment focused on India, see `docs/india_market_feasibility.md`.
+
+
+- To run on India universes such as NIFTY500/NIFTY300, set in `.env`:
+  ```sh
+  QLIB_DEFAULT_DATA_DIR=~/.qlib/qlib_data/in_data
+  QLIB_DEFAULT_REGION=cn
+  QLIB_FACTOR_BASE_CONFIG=conf_in_nifty500.yaml          # or conf_in_nifty300.yaml
+  QLIB_FACTOR_COMBINED_CONFIG=conf_in_nifty500_combined_kdd_ver.yaml   # or nifty300 variant
+  QLIB_PROVIDER_URI=~/.qlib/qlib_data/in_data
+  ```
+  India config templates are provided under `alphaagent/scenarios/qlib/experiment/factor_template/`.
+
 
 - You can modify backtest configuration files which are located at:
   - Baseline: `alphaagent/scenarios/qlib/experiment/factor_template/conf.yaml`
@@ -93,6 +107,64 @@ This repository follows the implementation of [RD-Agent](https://github.com/micr
 - `REASONING_MODEL` is used in the idea agent and factor agent, while `CHAT_MODEL` is for debugging factors and generating feedbacks.
 - Slow-thinking models, such as o3-mini are preferred for the `REASONING_MODEL`.
 - To run the project in a local environment (instead of Docker), add `USE_LOCAL=True` to the `.env` file.
+- If you see `python-dotenv could not parse statement` errors, ensure your `.env` is plain `KEY=VALUE` lines only (no triple-quoted text blocks).
+- If you see `ImportError: cannot import name 'ConfigDict' from 'pydantic'`, reinstall with pydantic v2 (`pip install -U "pydantic>=2.7,<3" "pydantic-settings>=2.0,<3"`).
+- If the `ConfigDict` error persists in an old virtualenv, recreate and reinstall dependencies:
+  ```sh
+  deactivate 2>/dev/null || true
+  rm -rf venv
+  python3 -m venv venv
+  source venv/bin/activate
+  pip install -U pip setuptools wheel
+  pip install -U "pydantic>=2.7,<3" "pydantic-settings>=2.0,<3"
+  pip install -e .
+  ```
+- If you see `No module named 'qlib'`, install Qlib in the same virtualenv before running:
+  ```sh
+  pip install pyqlib
+  # or
+  git clone https://github.com/microsoft/qlib.git
+  cd qlib && pip install . && cd ..
+  ```
+- If you see `daily_pv_all.h5 is not generated`, your Qlib provider data is missing/invalid. Verify `QLIB_PROVIDER_URI` points to existing qlib-formatted data (for India usually `~/.qlib/qlib_data/in_data`).
+- If you run `generate.py` directly, it loads `.env` and now **requires** `QLIB_PROVIDER_URI` (or `QLIB_DEFAULT_DATA_DIR`). It will fail fast if the path is missing, so you do not silently fall back to CN data.
+- If qlib logs still show `cn_data`, check for the new debug lines from `generate.py` (`[generate.py] Script path=...` and `[generate.py] qlib active provider_uri=...`). If you do not see them, your local checkout is not on the latest commit.
+- Qlib does not recognize `region: in` by default (`KeyError: 'in'`). For India custom datasets, use India `provider_uri`/instruments but keep `region: cn` in qrun configs.
+- If errors still mention `region: in` after pulling latest code, remove stale caches/workspaces and rerun so templates are recopied:
+  ```sh
+  rm -rf pickle_cache/* git_ignore_folder/RD-Agent_workspace/*
+  ```
+- If you see `instrument not exists: .../instruments/<name>.txt`, your selected market name does not match instrument files in your qlib dataset.
+- If you see `The benchmark ['NIFTY300'] does not exist`, your benchmark must be an actual instrument code from the selected market file, not the market alias.
+  - Example fix in `.env`:
+    ```sh
+    QLIB_MARKET=nifty300
+    QLIB_BENCHMARK=nsreliance   # example only; pick a code that exists in your nifty300.txt
+    ```
+  - The workspace runner will auto-correct an invalid benchmark to the first code in the market file and log a warning.
+  - List available files: `ls ~/.qlib/qlib_data/in_data/instruments/*.txt`
+  - Set `.env` overrides (without `.txt`):
+    ```sh
+    QLIB_MARKET=<instrument_file_stem>
+    QLIB_BENCHMARK=<optional_benchmark_symbol>
+    ```
+- If you see `Empty data from dataset` and qrun logs show `cn_data` while your `.env` points to `in_data`, your backtest template is still CN. Set:
+  ```sh
+  QLIB_FACTOR_BASE_CONFIG=conf_in_nifty500.yaml
+  QLIB_FACTOR_COMBINED_CONFIG=conf_in_nifty500_combined_kdd_ver.yaml
+  # or use the NIFTY300 variants
+  ```
+- If you see `ValueError: numpy.dtype size changed` or `pkgutil.ImpImporter` errors while installing `numpy==1.23.5`, you are likely on Python 3.12. Recreate the environment with Python 3.10/3.11 and reinstall:
+  ```sh
+  deactivate 2>/dev/null || true
+  rm -rf venv
+  # choose one supported interpreter
+  python3.11 -m venv venv   # or: python3.10 -m venv venv
+  source venv/bin/activate
+  pip install -U pip setuptools wheel
+  pip install "numpy==1.23.5" "pandas==1.5.3"
+  pip install -e .
+  ```
 
 
 ### 🚀 Run AlphaAgent
