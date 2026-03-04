@@ -37,6 +37,8 @@ from alphaagent.core.exception import CoderError
 from alphaagent.log import logger
 from functools import wraps
 
+STOP_EVENT = None
+
 # 定义装饰器：在函数调用前检查stop_event
 
             
@@ -89,6 +91,8 @@ class AlphaAgentLoop(LoopBase, metaclass=LoopMeta):
         """加载现有会话"""
         instance = super().load(path)
         instance.use_local = use_local
+        global STOP_EVENT
+        STOP_EVENT = None
         logger.info(f"加载AlphaAgentLoop，使用{'本地环境' if use_local else 'Docker容器'}回测")
         return instance
 
