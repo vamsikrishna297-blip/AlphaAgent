@@ -89,11 +89,17 @@ class QlibFBWorkspace(FBWorkspace):
                         sample_codes = []
 
                     if sample_codes and benchmark_name not in set(sample_codes):
-                        env_benchmark = os.getenv("QLIB_BENCHMARK", "").strip()
-                        tip = env_benchmark if env_benchmark else sample_codes[0]
-                        raise RuntimeError(
-                            f"Benchmark '{benchmark_name}' is not present in {instrument_path.name}. "
-                            f"Set QLIB_BENCHMARK to a valid code from that file (e.g. {tip})."
+                        fallback_benchmark = sample_codes[0]
+                        config_text = re.sub(
+                            r"(^|\n)(\s*benchmark:\s*&benchmark\s*)[^\n]+",
+                            rf"\1\2{fallback_benchmark}",
+                            config_text,
+                            count=1,
+                        )
+                        logger.warning(
+                            f"Benchmark '{benchmark_name}' is not present in {instrument_path.name}; "
+                            f"auto-corrected benchmark to '{fallback_benchmark}'. "
+                            "Set QLIB_BENCHMARK in .env to a preferred valid code if needed."
                         )
 
             config_path.write_text(config_text)

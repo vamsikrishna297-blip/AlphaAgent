@@ -139,8 +139,9 @@ This repository follows the implementation of [RD-Agent](https://github.com/micr
   - Example fix in `.env`:
     ```sh
     QLIB_MARKET=nifty300
-    QLIB_BENCHMARK=<one_code_from_~/.qlib/qlib_data/in_data/instruments/nifty300.txt>
+    QLIB_BENCHMARK=nsreliance   # example only; pick a code that exists in your nifty300.txt
     ```
+  - The workspace runner will auto-correct an invalid benchmark to the first code in the market file and log a warning.
   - List available files: `ls ~/.qlib/qlib_data/in_data/instruments/*.txt`
   - Set `.env` overrides (without `.txt`):
     ```sh
