@@ -631,6 +631,14 @@ class APIBackend:
             )
         return log_messages
 
+    @staticmethod
+    def _repair_common_json_escaping(resp: str) -> str:
+        """Repair common JSON escaping issues in model outputs."""
+
+        # JSON requires backslashes in string literals to be escaped.
+        # This repairs invalid sequences like "\operatorname" -> "\\operatorname".
+        return re.sub(r'\\(?!["\\/bfnrtu])', r"\\\\", resp)
+
     def _create_chat_completion_inner_function(  # noqa: C901, PLR0912, PLR0915
         self,
         messages: list[dict],
@@ -788,7 +796,12 @@ class APIBackend:
                 json_start = resp.find('{')
                 json_end = resp.rfind('}') + 1
                 resp = resp[json_start:json_end]
-                json.loads(resp)
+                try:
+                    json.loads(resp)
+                except json.JSONDecodeError:
+                    repaired_resp = self._repair_common_json_escaping(resp)
+                    json.loads(repaired_resp)
+                    resp = repaired_resp
         if self.dump_chat_cache:
             self.cache.chat_set(input_content_json, resp)
         return resp, finish_reason
